@@ -1,0 +1,50 @@
+rule DetectWriteHotspot "检测 TiDB 写热点：当某个 TiKV 节点的 Raftstore CPU 明显高于其他节点时触发" salience 10 {
+    when
+        TiDBMonitor.CheckWriteHotspot == true && 
+        TiDBMonitor.MaxRaftstoreCPU > 0 && 
+        TiDBMonitor.AvgRaftstoreCPU > 0 &&
+        TiDBMonitor.MaxRaftstoreCPU > TiDBMonitor.AvgRaftstoreCPU * 1.5
+    then
+        TiDBMonitor.WriteHotspotDetected = true;
+        TiDBMonitor.WriteHotspotRatio = TiDBMonitor.MaxRaftstoreCPU / TiDBMonitor.AvgRaftstoreCPU;
+        Log("检测到写热点！节点: " + TiDBMonitor.WriteHotspotNode);
+        Retract("DetectWriteHotspot");
+}
+
+rule DetectReadHotspot "检测 TiDB 读热点：当某个 TiKV 节点的 Coprocessor CPU 明显高于其他节点时触发" salience 10 {
+    when
+        TiDBMonitor.CheckReadHotspot == true && 
+        TiDBMonitor.MaxCoprocessorCPU > 0 && 
+        TiDBMonitor.AvgCoprocessorCPU > 0 &&
+        TiDBMonitor.MaxCoprocessorCPU > TiDBMonitor.AvgCoprocessorCPU * 1.5
+    then
+        TiDBMonitor.ReadHotspotDetected = true;
+        TiDBMonitor.ReadHotspotRatio = TiDBMonitor.MaxCoprocessorCPU / TiDBMonitor.AvgCoprocessorCPU;
+        Log("检测到读热点！节点: " + TiDBMonitor.ReadHotspotNode);
+        Retract("DetectReadHotspot");
+}
+
+rule NoWriteHotspot "未检测到写热点" salience 5 {
+    when
+        TiDBMonitor.CheckWriteHotspot == true && 
+        TiDBMonitor.MaxRaftstoreCPU > 0 && 
+        TiDBMonitor.AvgRaftstoreCPU > 0 &&
+        TiDBMonitor.MaxRaftstoreCPU <= TiDBMonitor.AvgRaftstoreCPU * 1.5
+    then
+        TiDBMonitor.WriteHotspotDetected = false;
+        Log("未检测到写热点，所有 TiKV 节点的 Raftstore CPU 分布正常");
+        Retract("NoWriteHotspot");
+}
+
+rule NoReadHotspot "未检测到读热点" salience 5 {
+    when
+        TiDBMonitor.CheckReadHotspot == true && 
+        TiDBMonitor.MaxCoprocessorCPU > 0 && 
+        TiDBMonitor.AvgCoprocessorCPU > 0 &&
+        TiDBMonitor.MaxCoprocessorCPU <= TiDBMonitor.AvgCoprocessorCPU * 1.5
+    then
+        TiDBMonitor.ReadHotspotDetected = false;
+        Log("未检测到读热点，所有 TiKV 节点的 Coprocessor CPU 分布正常");
+        Retract("NoReadHotspot");
+}
+
