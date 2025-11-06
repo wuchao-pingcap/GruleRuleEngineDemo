@@ -1,0 +1,28 @@
+rule SpeedUp "When car speeds up and speed is less than max speed, increase speed and update distance record" salience 10 {
+    when
+        TestCar.SpeedUp == true && TestCar.Speed < TestCar.MaxSpeed
+    then
+        TestCar.Speed = TestCar.Speed + TestCar.SpeedIncrement;
+        DistanceRecord.TotalDistance = DistanceRecord.TotalDistance + TestCar.Speed;
+        DistanceRecord.LastSpeed = TestCar.Speed;
+        Retract("SpeedUp");
+}
+
+rule SpeedDown "When car speeds down and speed is greater than 0, decrease speed" salience 10 {
+    when
+        TestCar.SpeedDown == true && TestCar.Speed > 0
+    then
+        TestCar.Speed = TestCar.Speed - TestCar.SpeedIncrement;
+        DistanceRecord.TotalDistance = DistanceRecord.TotalDistance + TestCar.Speed;
+        DistanceRecord.LastSpeed = TestCar.Speed;
+        Retract("SpeedDown");
+}
+
+rule MaxSpeedReached "When car reaches max speed, stop accelerating" salience 9 {
+    when
+        TestCar.Speed >= TestCar.MaxSpeed
+    then
+        DistanceRecord.TotalDistance = DistanceRecord.TotalDistance + TestCar.Speed;
+        DistanceRecord.LastSpeed = TestCar.Speed;
+}
+
