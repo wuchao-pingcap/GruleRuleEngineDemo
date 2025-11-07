@@ -41,6 +41,11 @@ type TiDBMonitor struct {
 	WriteHotspotRatio    float64
 	ReadHotspotDetected  bool
 	ReadHotspotRatio     float64
+
+	// 非聚簇索引热点相关
+	IsNonClusteredIndexHotspot bool // 是否是非聚簇索引导致的写热点
+	ShardRowIDBits             int  // 建议的 SHARD_ROW_ID_BITS 值（0-15）
+	RecommendShardRowIDBits    bool // 是否建议设置 SHARD_ROW_ID_BITS
 }
 
 // CalculateStatistics 计算统计信息（平均值、最大值等）
@@ -89,16 +94,28 @@ type TiDBRuleExecutor struct {
 	ruleVersion      string
 }
 
-// NewTiDBRuleExecutor 创建并初始化 TiDB 规则执行器
+// NewTiDBRuleExecutor 创建并初始化 TiDB 规则执行器（支持单个规则文件）
 func NewTiDBRuleExecutor(ruleFile, ruleName, ruleVersion string) (*TiDBRuleExecutor, error) {
+	return NewTiDBRuleExecutorWithFiles([]string{ruleFile}, ruleName, ruleVersion)
+}
+
+// NewTiDBRuleExecutorWithFiles 创建并初始化 TiDB 规则执行器（支持多个规则文件）
+// 可以传入多个规则文件，它们会被加载到同一个知识库中
+func NewTiDBRuleExecutorWithFiles(ruleFiles []string, ruleName, ruleVersion string) (*TiDBRuleExecutor, error) {
+	if len(ruleFiles) == 0 {
+		return nil, fmt.Errorf("至少需要提供一个规则文件")
+	}
+
 	// 1. 创建知识库
 	knowledgeLibrary := ast.NewKnowledgeLibrary()
 	ruleBuilder := builder.NewRuleBuilder(knowledgeLibrary)
 
-	// 2. 加载规则文件
-	err := ruleBuilder.BuildRuleFromResource(ruleName, ruleVersion, pkg.NewFileResource(ruleFile))
-	if err != nil {
-		return nil, fmt.Errorf("加载规则文件失败: %v", err)
+	// 2. 加载所有规则文件到同一个知识库
+	for i, ruleFile := range ruleFiles {
+		err := ruleBuilder.BuildRuleFromResource(ruleName, ruleVersion, pkg.NewFileResource(ruleFile))
+		if err != nil {
+			return nil, fmt.Errorf("加载规则文件 [%d/%d] %s 失败: %v", i+1, len(ruleFiles), ruleFile, err)
+		}
 	}
 
 	// 3. 获取知识库实例

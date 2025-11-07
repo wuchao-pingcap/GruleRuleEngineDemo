@@ -48,3 +48,58 @@ rule NoReadHotspot "未检测到读热点" salience 5 {
         Retract("NoReadHotspot");
 }
 
+rule RecommendShardRowIDBitsHigh "检测到非聚簇索引写入热点（高），建议设置 SHARD_ROW_ID_BITS=15" salience 20 {
+    when
+        TiDBMonitor.WriteHotspotDetected == true &&
+        TiDBMonitor.IsNonClusteredIndexHotspot == true &&
+        TiDBMonitor.WriteHotspotRatio > 3.0 &&
+        TiDBMonitor.RecommendShardRowIDBits == false
+    then
+        TiDBMonitor.RecommendShardRowIDBits = true;
+        TiDBMonitor.ShardRowIDBits = 15;
+        Log("检测到非聚簇索引写入热点，自动建议设置 SHARD_ROW_ID_BITS=15 来打散 RowID，缓解写入热点问题");
+        Retract("RecommendShardRowIDBitsHigh");
+}
+
+rule RecommendShardRowIDBitsMedium "检测到非聚簇索引写入热点（中），建议设置 SHARD_ROW_ID_BITS=12" salience 20 {
+    when
+        TiDBMonitor.WriteHotspotDetected == true &&
+        TiDBMonitor.IsNonClusteredIndexHotspot == true &&
+        TiDBMonitor.WriteHotspotRatio > 2.5 &&
+        TiDBMonitor.WriteHotspotRatio <= 3.0 &&
+        TiDBMonitor.RecommendShardRowIDBits == false
+    then
+        TiDBMonitor.RecommendShardRowIDBits = true;
+        TiDBMonitor.ShardRowIDBits = 12;
+        Log("检测到非聚簇索引写入热点，自动建议设置 SHARD_ROW_ID_BITS=12 来打散 RowID，缓解写入热点问题");
+        Retract("RecommendShardRowIDBitsMedium");
+}
+
+rule RecommendShardRowIDBitsLow "检测到非聚簇索引写入热点（低），建议设置 SHARD_ROW_ID_BITS=10" salience 20 {
+    when
+        TiDBMonitor.WriteHotspotDetected == true &&
+        TiDBMonitor.IsNonClusteredIndexHotspot == true &&
+        TiDBMonitor.WriteHotspotRatio > 2.0 &&
+        TiDBMonitor.WriteHotspotRatio <= 2.5 &&
+        TiDBMonitor.RecommendShardRowIDBits == false
+    then
+        TiDBMonitor.RecommendShardRowIDBits = true;
+        TiDBMonitor.ShardRowIDBits = 10;
+        Log("检测到非聚簇索引写入热点，自动建议设置 SHARD_ROW_ID_BITS=10 来打散 RowID，缓解写入热点问题");
+        Retract("RecommendShardRowIDBitsLow");
+}
+
+rule RecommendShardRowIDBitsMinimal "检测到非聚簇索引写入热点（轻微），建议设置 SHARD_ROW_ID_BITS=8" salience 20 {
+    when
+        TiDBMonitor.WriteHotspotDetected == true &&
+        TiDBMonitor.IsNonClusteredIndexHotspot == true &&
+        TiDBMonitor.WriteHotspotRatio > 1.5 &&
+        TiDBMonitor.WriteHotspotRatio <= 2.0 &&
+        TiDBMonitor.RecommendShardRowIDBits == false
+    then
+        TiDBMonitor.RecommendShardRowIDBits = true;
+        TiDBMonitor.ShardRowIDBits = 8;
+        Log("检测到非聚簇索引写入热点，自动建议设置 SHARD_ROW_ID_BITS=8 来打散 RowID，缓解写入热点问题");
+        Retract("RecommendShardRowIDBitsMinimal");
+}
+
