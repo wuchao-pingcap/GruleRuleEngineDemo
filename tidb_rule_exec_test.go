@@ -3,24 +3,19 @@ package main
 import (
 	"fmt"
 	"log"
+	"testing"
 )
 
-func main() {
-	// 可以选择运行不同的示例
-	// carRuleExecutor()
-	tidbRuleExecutor()
-}
-
-func tidbRuleExecutor() {
-	fmt.Println("=== TiDB 热点检测规则引擎示例 ===")
+// 1. 演示写热点检测
+func TestDetectReadHotspot(t *testing.T) {
 
 	// 1. 初始化规则执行器（单个规则文件）
 	ruleFile := "tidb.grl"
 	ruleExecutor, err := NewTiDBRuleExecutor(ruleFile, "TiDBHotspot", "1.0.0")
 	if err != nil {
-		log.Fatalf("初始化规则执行器失败: %v", err)
+		t.Fatalf("初始化规则执行器失败: %v", err)
 	}
-	fmt.Println("✓ 规则文件加载成功")
+	fmt.Printf("✓ 规则文件加载成功")
 
 	// 示例：使用多个规则文件
 	// ruleFiles := []string{"tidb.grl", "tidb-advanced.grl"}
@@ -94,6 +89,17 @@ func tidbRuleExecutor() {
 	} else {
 		fmt.Printf("  ✗ 未检测到读热点\n")
 	}
+}
+
+// 6. 演示非聚簇索引写入热点
+func TestDetectNonClusteredIndexWriteHotspot(t *testing.T) {
+
+	ruleFile := "tidb.grl"
+	ruleExecutor, err := NewTiDBRuleExecutor(ruleFile, "TiDBHotspot", "1.0.0")
+	if err != nil {
+		t.Fatalf("初始化规则执行器失败: %v", err)
+	}
+	fmt.Printf("✓ 规则文件加载成功")
 
 	// 6. 演示非聚簇索引写入热点
 	fmt.Println("\n=== 测试非聚簇索引写入热点 ===")
@@ -133,6 +139,17 @@ func tidbRuleExecutor() {
 	} else {
 		fmt.Printf("  ✗ 未检测到写热点\n")
 	}
+}
+
+// 7. 演示规则不匹配的情况
+func TestWriteHotspotNotMatch(t *testing.T) {
+	// 1. 初始化规则执行器（单个规则文件）
+	ruleFile := "tidb.grl"
+	ruleExecutor, err := NewTiDBRuleExecutor(ruleFile, "TiDBHotspot", "1.0.0")
+	if err != nil {
+		t.Fatalf("初始化规则执行器失败: %v", err)
+	}
+	fmt.Printf("✓ 规则文件加载成功")
 
 	// 7. 演示规则不匹配的情况
 	fmt.Println("\n=== 测试规则不匹配的情况 ===")
@@ -177,6 +194,17 @@ func tidbRuleExecutor() {
 	} else {
 		fmt.Printf("  ✗ 未建议设置 SHARD_ROW_ID_BITS（因为未检测到写热点）\n")
 	}
+}
+
+// 6. 演示非聚簇索引建议规则不匹配 - 检测到写热点但不是非聚簇索引热点
+func TestNonClusteredIndexWriteHotspotNotMatch(t *testing.T) {
+	// 1. 初始化规则执行器（单个规则文件）
+	ruleFile := "tidb.grl"
+	ruleExecutor, err := NewTiDBRuleExecutor(ruleFile, "TiDBHotspot", "1.0.0")
+	if err != nil {
+		t.Fatalf("初始化规则执行器失败: %v", err)
+	}
+	fmt.Printf("✓ 规则文件加载成功")
 
 	// 场景2：非聚簇索引建议规则不匹配 - 检测到写热点但不是非聚簇索引热点
 	fmt.Println("\n场景2：非聚簇索引建议规则不匹配（不是非聚簇索引热点）")
@@ -217,6 +245,17 @@ func tidbRuleExecutor() {
 	} else {
 		fmt.Printf("  ✗ 未建议设置 SHARD_ROW_ID_BITS（规则未匹配：不是非聚簇索引热点）\n")
 	}
+}
+
+// 7. 演示非聚簇索引建议规则不匹配 - 热点比例不在建议范围内
+func TestNonClusteredIndexWriteHotspotNotMatchRatio(t *testing.T) {
+	// 1. 初始化规则执行器（单个规则文件）
+	ruleFile := "tidb.grl"
+	ruleExecutor, err := NewTiDBRuleExecutor(ruleFile, "TiDBHotspot", "1.0.0")
+	if err != nil {
+		t.Fatalf("初始化规则执行器失败: %v", err)
+	}
+	fmt.Printf("✓ 规则文件加载成功")
 
 	// 场景3：非聚簇索引建议规则不匹配 - 热点比例不在建议范围内
 	fmt.Println("\n场景3：非聚簇索引建议规则不匹配（热点比例不在建议范围内）")
@@ -259,6 +298,17 @@ func tidbRuleExecutor() {
 		fmt.Printf("  ✗ 未检测到写热点（规则未匹配：热点比例 %.2f 倍 < 1.5 倍）\n", ratio)
 		fmt.Printf("  ✗ 未建议设置 SHARD_ROW_ID_BITS（因为未检测到写热点）\n")
 	}
+}
+
+// 8. 演示正常情况
+func TestNormalCase(t *testing.T) {
+	// 1. 初始化规则执行器（单个规则文件）
+	ruleFile := "tidb.grl"
+	ruleExecutor, err := NewTiDBRuleExecutor(ruleFile, "TiDBHotspot", "1.0.0")
+	if err != nil {
+		t.Fatalf("初始化规则执行器失败: %v", err)
+	}
+	fmt.Printf("✓ 规则文件加载成功")
 
 	// 8. 演示正常情况
 	fmt.Println("\n=== 测试正常情况（无热点）===")
